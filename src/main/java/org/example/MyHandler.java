@@ -40,17 +40,31 @@ public class MyHandler implements HttpHandler {
 
         Gson g = new Gson();
         System.out.println(method + ": " + params);
+        // Controllo se effettivamente sto mettendo dei comandi nella richiesa
+        if(!params.contains("=")) {
+            String error = new ErrorAnswer("Error in the parameter inserted", false).asJSON();
+            sendBack(exchange,error);
+        }
         params = "{" + params + "}";
 
         Command cmd = null;
         cmd = g.fromJson(params, Command.class);
+        System.out.println(method + ": " + params);
         System.out.println("getting cmd");
-        System.out.println(cmd.getCmd());
-        String result = executeCmd(cmd, exchange);
-        System.out.println("The result " + result);
+        System.out.println("cmd" + cmd);
+        System.out.println("cmdGet" + cmd.getCmd());
 
-
-        parseJSON(exchange, params);
+        //Controllo se la richiesta è di tipo "cmd='comando'"
+        if(cmd.getCmd()!=null) {
+            String result = executeCmd(cmd, exchange);
+            System.out.println("The result " + result);
+            parseJSON(exchange, params);
+        }
+        else {
+            String error = new ErrorAnswer("Error in the request, your request should use cmd", false).asJSON();
+            System.out.println(error);
+            sendBack(exchange,error);
+        }
 
     }
 

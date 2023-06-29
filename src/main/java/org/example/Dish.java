@@ -66,6 +66,12 @@ public class Dish {
         return toJson;
     }
 
+    public String asJSONTCP() {
+        Gson g = new Gson();
+        String toJson = g.toJson(this);
+        return toJson;
+    }
+
     public double getCalories() {
         return calories;
     }

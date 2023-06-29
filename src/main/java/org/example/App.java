@@ -6,6 +6,8 @@ import com.sun.net.httpserver.HttpServer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
 
 /**
@@ -14,6 +16,8 @@ import java.util.ArrayList;
  */
 public class App 
 {
+    static int portNumber = 1234;
+    static ServerSocket serverSocket;
     static ArrayList<Dish> sampleDishes = new ArrayList<>();
     static void buildList(ArrayList<Dish> dishes) {
         dishes.add(new Dish("Il famoso primo romano", 1, false, "Carbonara", 402.6, 9.50));
@@ -54,6 +58,47 @@ public class App
         return arrayAsJSON(veg);
     }
 
+    //Metodi per TCP
+    static boolean startServer() {
+        try {
+            serverSocket = new ServerSocket(portNumber);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
+    static String arrayAsJSONTCP(ArrayList<Dish> dishes) {
+        Gson g = new Gson();
+        String toJson = g.toJson(dishes);
+        toJson = "{\"piatti\": " + toJson + "}";
+        return toJson;
+    }
+
+    static String mostCaloricTCP(ArrayList<Dish> dishes) {
+        double maxCal = 0;
+        Dish mostCalDish = null;
+        for (Dish d:
+                dishes) {
+            if (d.getCalories() >= maxCal) {
+                maxCal = d.getCalories();
+                mostCalDish = d;
+            }
+        }
+        return  mostCalDish.asJSONTCP();
+    }
+
+    static String onlyVegansTCP(ArrayList<Dish> dishes) {
+        ArrayList<Dish> veg = new ArrayList<>();
+        for (Dish d:
+                dishes) {
+            if (d.isVegan()) {
+                veg.add(d);
+            }
+        }
+        return arrayAsJSONTCP(veg);
+    }
+
     public static void main(String[] args) {
         buildList(sampleDishes);
         HttpServer server = null;
@@ -67,6 +112,35 @@ public class App
 
         server.setExecutor(null);
         server.start();
+
+        // Implementazione TCP
+        if(!startServer()) {
+            return;
+        }
+
+        while(true) {
+
+            Socket clientSocket;
+            try {
+                clientSocket = serverSocket.accept();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+            Thread th = new Thread(
+                    () -> {
+                        System.out.println(Thread.currentThread().threadId());
+                        ClientHandler clientHandler = new ClientHandler(clientSocket);
+                        if (!clientHandler.manage()) {
+                            System.out.println("cannot run client");
+                        }
+                    }// end of λ
+            );
+            th.start();
+
+        }
+
+
     }
 
 }
